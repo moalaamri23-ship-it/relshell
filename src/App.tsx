@@ -75,6 +75,29 @@ export default function App() {
               allow="fullscreen"
             />
 
+            {/* Fallback — shown when iframe is blocked by X-Frame-Options / CSP */}
+            {isActive && (
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <div className="bg-white rounded-xl shadow-xl p-8 max-w-sm text-center pointer-events-auto"
+                     style={{ opacity: 0, animation: 'fadeIn 0.3s 4s ease-out forwards' }}>
+                  <div className="text-slate-400 text-sm mb-1">Unable to embed this app</div>
+                  <div className="text-xs text-slate-400 mb-4">
+                    The app may be blocking iframe embedding.<br />
+                    Add a <code className="bg-slate-100 px-1 rounded font-mono">_headers</code> file to allow it.
+                  </div>
+                  <a
+                    href={app.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded font-bold text-sm hover:bg-slate-800 transition"
+                  >
+                    Open in new tab
+                    <Icon name="arrowLeft" className="w-4 h-4 rotate-180" />
+                  </a>
+                </div>
+              </div>
+            )}
+
             {/* Hover-reveal back arrow — only interactive when active */}
             {isActive && (
               <div className="fixed top-0 left-0 w-16 h-16 z-[60] group">
