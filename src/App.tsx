@@ -18,7 +18,15 @@ const ANIM_CLASSES = [
 const loadApps = (): AppConfig[] => {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
-    if (raw) return JSON.parse(raw) as AppConfig[]
+    if (raw) {
+      const apps = JSON.parse(raw) as AppConfig[]
+      // Migrate any cached http:// URLs → https:// (mixed-content fix for Cloudflare)
+      const migrated = apps.map(a => ({
+        ...a,
+        url: a.url ? a.url.replace(/^http:\/\//i, 'https://') : a.url,
+      }))
+      return migrated
+    }
   } catch { /* ignore */ }
   return DEFAULT_APPS
 }
