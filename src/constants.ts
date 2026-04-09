@@ -25,6 +25,13 @@ export const DEFAULT_APPS: AppConfig[] = [
     description: 'SAP PM reliability audit engine',
     accent: 'emerald',
   },
+    {
+    id: 'pro-ods-simulator',
+    name: 'Pro ODS Simulator',
+    url: 'https://proods.moalaamri23.workers.dev',
+    description: 'Vibration Simulator and AI-Assisted Diagnostics',
+    accent: 'blue',
+  },
 ]
 
 export interface AccentMeta {
