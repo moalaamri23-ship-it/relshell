@@ -25,12 +25,19 @@ export const DEFAULT_APPS: AppConfig[] = [
     description: 'SAP PM reliability audit engine',
     accent: 'emerald',
   },
-    {
+  {
     id: 'pro-ods-simulator',
     name: 'Pro ODS Simulator',
     url: 'https://proods.moalaamri23.workers.dev',
     description: 'Vibration Simulator and AI-Assisted Diagnostics',
     accent: 'blue',
+  },
+  {
+    id: 'filelm',
+    name: 'FileLM',
+    url: 'https://filelm.moalaamri23.workers.dev',
+    description: 'File Large Language Model',
+    accent: 'emerald',
   },
 ]
 
@@ -44,12 +51,12 @@ export interface AccentMeta {
 }
 
 export const ACCENT_META: Record<AccentColor, AccentMeta> = {
-  blue:    { bar: '#3b82f6', glowClass: '', letterBg: 'bg-blue-100',    letterText: 'text-blue-600',    swatch: 'bg-blue-500',    label: 'Blue'    },
-  amber:   { bar: '#f59e0b', glowClass: '', letterBg: 'bg-amber-100',   letterText: 'text-amber-600',   swatch: 'bg-amber-500',   label: 'Amber'   },
+  blue: { bar: '#3b82f6', glowClass: '', letterBg: 'bg-blue-100', letterText: 'text-blue-600', swatch: 'bg-blue-500', label: 'Blue' },
+  amber: { bar: '#f59e0b', glowClass: '', letterBg: 'bg-amber-100', letterText: 'text-amber-600', swatch: 'bg-amber-500', label: 'Amber' },
   emerald: { bar: '#10b981', glowClass: '', letterBg: 'bg-emerald-100', letterText: 'text-emerald-600', swatch: 'bg-emerald-500', label: 'Emerald' },
-  red:     { bar: '#ef4444', glowClass: '', letterBg: 'bg-red-100',     letterText: 'text-red-600',     swatch: 'bg-red-500',     label: 'Red'     },
-  purple:  { bar: '#a855f7', glowClass: '', letterBg: 'bg-purple-100',  letterText: 'text-purple-600',  swatch: 'bg-purple-500',  label: 'Purple'  },
-  slate:   { bar: '#64748b', glowClass: '', letterBg: 'bg-slate-100',   letterText: 'text-slate-600',   swatch: 'bg-slate-500',   label: 'Slate'   },
+  red: { bar: '#ef4444', glowClass: '', letterBg: 'bg-red-100', letterText: 'text-red-600', swatch: 'bg-red-500', label: 'Red' },
+  purple: { bar: '#a855f7', glowClass: '', letterBg: 'bg-purple-100', letterText: 'text-purple-600', swatch: 'bg-purple-500', label: 'Purple' },
+  slate: { bar: '#64748b', glowClass: '', letterBg: 'bg-slate-100', letterText: 'text-slate-600', swatch: 'bg-slate-500', label: 'Slate' },
 }
 
 /** Priority-ordered icon URL candidates for a given app base URL */
