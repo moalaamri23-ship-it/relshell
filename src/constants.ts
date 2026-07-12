@@ -75,13 +75,12 @@ export const getIconCandidates = (url: string): string[] => [
 
 /**
  * Manual publishing convention for every app:
- * - /manual/ serves the embedded HTML guide
- * - /manual/index.html is the downloadable HTML file
+ * - /manual/index.html serves the embedded and downloadable HTML guide
  * - /manual/manual.pdf is the downloadable PDF file
  */
 export const getManualUrl = (appUrl: string): string => {
   const baseUrl = appUrl.endsWith('/') ? appUrl : `${appUrl}/`
-  return new URL('manual/', baseUrl).toString()
+  return new URL('manual/index.html', baseUrl).toString()
 }
 
 export const getManualHtmlDownloadUrl = (appUrl: string): string =>
