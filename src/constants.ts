@@ -75,12 +75,14 @@ export const getIconCandidates = (url: string): string[] => [
 
 /**
  * Manual publishing convention for every app:
- * - /manual/index.html serves the embedded and downloadable HTML guide
+ * - /manual/ serves the embedded HTML guide inline (iframe-safe — no attachment header)
+ * - /manual/index.html is the downloadable HTML file (apps may serve it with
+ *   Content-Disposition: attachment, so it must never be used as the iframe src)
  * - /manual/manual.pdf is the downloadable PDF file
  */
 export const getManualUrl = (appUrl: string): string => {
   const baseUrl = appUrl.endsWith('/') ? appUrl : `${appUrl}/`
-  return new URL('manual/index.html', baseUrl).toString()
+  return new URL('manual/', baseUrl).toString()
 }
 
 export const getManualHtmlDownloadUrl = (appUrl: string): string =>
