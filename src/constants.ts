@@ -73,10 +73,21 @@ export const getIconCandidates = (url: string): string[] => [
   `${url}/favicon.ico`,                 // last resort — typically 16–32px
 ]
 
-/** Manual endpoint convention: every app publishes static HTML at /manual/. */
+/**
+ * Manual publishing convention for every app:
+ * - /manual/ serves the embedded HTML guide
+ * - /manual/index.html is the downloadable HTML file
+ * - /manual/manual.pdf is the downloadable PDF file
+ */
 export const getManualUrl = (appUrl: string): string => {
   const baseUrl = appUrl.endsWith('/') ? appUrl : `${appUrl}/`
   return new URL('manual/', baseUrl).toString()
 }
+
+export const getManualHtmlDownloadUrl = (appUrl: string): string =>
+  new URL('index.html', getManualUrl(appUrl)).toString()
+
+export const getManualPdfUrl = (appUrl: string): string =>
+  new URL('manual.pdf', getManualUrl(appUrl)).toString()
 
 export const ACCENT_COLORS: AccentColor[] = ['blue', 'amber', 'emerald', 'red', 'purple', 'slate']
