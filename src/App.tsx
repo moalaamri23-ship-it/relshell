@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { TopBar } from './components/TopBar'
 import { AppTile } from './components/AppTile'
 import { SettingsPanel } from './components/SettingsPanel'
+import { ManualViewer } from './components/ManualViewer'
 import { Icon } from './components/Icon'
 import { DEFAULT_APPS, STORAGE_KEY } from './constants'
 import type { AppConfig } from './types'
@@ -38,6 +39,7 @@ export default function App() {
   const [apps, setAppsState] = useState<AppConfig[]>(loadApps)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [activeApp, setActiveApp] = useState<AppConfig | null>(null)
+  const [manualApp, setManualApp] = useState<AppConfig | null>(null)
 
   const setApps = (next: AppConfig[]) => {
     setAppsState(next)
@@ -52,11 +54,14 @@ export default function App() {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setActiveApp(null)
+      if (e.key === 'Escape') {
+        if (manualApp) setManualApp(null)
+        else setActiveApp(null)
+      }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [])
+  }, [manualApp])
 
   return (
     <div className="h-screen overflow-hidden font-sans">
@@ -124,6 +129,7 @@ export default function App() {
                   key={app.id}
                   app={app}
                   onClick={handleLaunch}
+                  onManualOpen={setManualApp}
                   animClass={ANIM_CLASSES[Math.min(i, ANIM_CLASSES.length - 1)]}
                 />
               ))}
@@ -156,6 +162,10 @@ export default function App() {
           onClose={() => setSettingsOpen(false)}
         />
       </div>
+
+      {manualApp && (
+        <ManualViewer app={manualApp} onClose={() => setManualApp(null)} />
+      )}
     </div>
   )
 }

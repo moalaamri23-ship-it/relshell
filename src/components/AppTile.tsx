@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import type { AppConfig, AccentColor } from '../types'
 import { ACCENT_META, FAVICON_PREFIX, getIconCandidates } from '../constants'
+import { Icon } from './Icon'
 
 // ─── Letter avatar fallback ───────────────────────────────────────────────────
 
@@ -91,10 +92,11 @@ const refetchIcon = (url: string) => {
 interface AppTileProps {
   app: AppConfig
   onClick: (app: AppConfig) => void
+  onManualOpen: (app: AppConfig) => void
   animClass?: string
 }
 
-export const AppTile = ({ app, onClick, animClass = 'animate-enter' }: AppTileProps) => {
+export const AppTile = ({ app, onClick, onManualOpen, animClass = 'animate-enter' }: AppTileProps) => {
   const meta = ACCENT_META[app.accent]
 
   const handleClick = () => {
@@ -117,9 +119,22 @@ export const AppTile = ({ app, onClick, animClass = 'animate-enter' }: AppTilePr
 
       {/* Name + description */}
       <div className="px-4 pb-4">
-        <div className="font-bold text-slate-900 text-sm leading-tight">{app.name}</div>
-        <div className="text-xs text-slate-500 mt-1 leading-relaxed line-clamp-2">{app.description}</div>
+        <div className="pr-8 font-bold text-slate-900 text-sm leading-tight">{app.name}</div>
+        <div className="pr-8 text-xs text-slate-500 mt-1 leading-relaxed line-clamp-2">{app.description}</div>
       </div>
+
+      <button
+        type="button"
+        onClick={e => {
+          e.stopPropagation()
+          onManualOpen(app)
+        }}
+        className="absolute right-3 bottom-3 w-8 h-8 flex items-center justify-center rounded bg-slate-100 text-slate-400 hover:bg-slate-900 hover:text-white focus:outline-none focus:ring-2 focus:ring-brand-500 transition"
+        aria-label={`Open ${app.name} user manual`}
+        title={`Open ${app.name} user manual`}
+      >
+        <Icon name="book" className="w-4 h-4" />
+      </button>
     </div>
   )
 }

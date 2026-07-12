@@ -73,4 +73,10 @@ export const getIconCandidates = (url: string): string[] => [
   `${url}/favicon.ico`,                 // last resort — typically 16–32px
 ]
 
+/** Manual endpoint convention: every app publishes static HTML at /manual/. */
+export const getManualUrl = (appUrl: string): string => {
+  const baseUrl = appUrl.endsWith('/') ? appUrl : `${appUrl}/`
+  return new URL('manual/', baseUrl).toString()
+}
+
 export const ACCENT_COLORS: AccentColor[] = ['blue', 'amber', 'emerald', 'red', 'purple', 'slate']
