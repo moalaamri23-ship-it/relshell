@@ -39,6 +39,13 @@ export const DEFAULT_APPS: AppConfig[] = [
     description: 'File Large Language Model',
     accent: 'emerald',
   },
+  {
+    id: 'rcm-studio',
+    name: 'RCM Studio',
+    url: 'https://rcm.moalaamri23.workers.dev',
+    description: 'SAE JA1011 RCM decision engine for FMECA failure modes',
+    accent: 'purple',
+  },
 ]
 
 export interface AccentMeta {
