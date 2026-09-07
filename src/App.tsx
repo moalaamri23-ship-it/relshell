@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { TopBar } from './components/TopBar'
 import { AppTile } from './components/AppTile'
 import { SettingsPanel } from './components/SettingsPanel'
@@ -40,6 +40,8 @@ export default function App() {
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [activeApp, setActiveApp] = useState<AppConfig | null>(null)
   const [manualApp, setManualApp] = useState<AppConfig | null>(null)
+  const [isFullscreen, setIsFullscreen] = useState(false)
+  const rootRef = useRef<HTMLDivElement>(null)
 
   const setApps = (next: AppConfig[]) => {
     setAppsState(next)
@@ -52,9 +54,79 @@ export default function App() {
 
   const handleBack = () => setActiveApp(null)
 
+  // Fullscreen the root wrapper div rather than document.documentElement — the
+  // iframes are position:fixed inside it, so they still fill the screen.
+  const toggleFullscreen = () => {
+    shellWantsFullscreen.current = !document.fullscreenElement
+    if (document.fullscreenElement) document.exitFullscreen().catch(() => {})
+    else rootRef.current?.requestFullscreen().catch(() => {})
+  }
+
+  useEffect(() => {
+    const onChange = () => setIsFullscreen(!!document.fullscreenElement)
+    document.addEventListener('fullscreenchange', onChange)
+    return () => document.removeEventListener('fullscreenchange', onChange)
+  }, [])
+
+  // ── Fullscreen handoff with embedded apps ───────────────────────────────────
+  // Chromium will not grant fullscreen to a cross-origin child while this
+  // document already holds it: the child's requestFullscreen() never settles and
+  // no fullscreenerror fires, so the app's own button appears dead. Worse, the
+  // request cannot be revived afterwards — releasing our fullscreen later does
+  // not complete it. The shell therefore has to step aside *before* the app asks.
+  //
+  //   app  → shell : { fs: 'request' }   sent from the click, before requesting
+  //   shell→ app   : { fs: 'clear' }     after exiting its own fullscreen
+  //   app  → shell : { fs: 'released' }  when the app leaves fullscreen
+  //
+  // The app keeps transient activation across that round-trip, so its request
+  // still counts as user-initiated. On release we re-enter, which works only
+  // when the app exited from a click (activation propagates to us); leaving via
+  // Esc drops out of everything, which is what Esc does anyway.
+  const shellWantsFullscreen = useRef(false)
+
+  const appOrigins = useMemo(() => {
+    const origins = new Set<string>()
+    for (const app of apps) {
+      if (!app.url) continue
+      try { origins.add(new URL(app.url).origin) } catch { /* skip malformed */ }
+    }
+    return origins
+  }, [apps])
+
+  useEffect(() => {
+    const onMessage = async (e: MessageEvent) => {
+      const data = e.data as { fs?: string } | null
+      if (!data || (data.fs !== 'request' && data.fs !== 'released')) return
+      // Only apps we actually embed may drive the shell's fullscreen.
+      if (!appOrigins.has(e.origin)) return
+
+      if (data.fs === 'request') {
+        if (document.fullscreenElement) {
+          shellWantsFullscreen.current = true
+          try { await document.exitFullscreen() } catch { /* already out */ }
+        }
+        ;(e.source as Window | null)?.postMessage({ fs: 'clear' }, e.origin)
+        return
+      }
+
+      if (!shellWantsFullscreen.current || document.fullscreenElement) return
+      shellWantsFullscreen.current = false
+      // Needs the activation the app's own exit click propagated to us; after
+      // Esc there is none and this rejects, leaving the shell windowed.
+      try { await rootRef.current?.requestFullscreen() } catch { /* no activation */ }
+    }
+
+    window.addEventListener('message', onMessage)
+    return () => window.removeEventListener('message', onMessage)
+  }, [appOrigins])
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
+        // Esc while fullscreen is consumed by the browser to leave fullscreen —
+        // don't also unwind shell state on that same press.
+        if (document.fullscreenElement) return
         if (manualApp) setManualApp(null)
         else setActiveApp(null)
       }
@@ -64,7 +136,7 @@ export default function App() {
   }, [manualApp])
 
   return (
-    <div className="h-screen overflow-hidden font-sans">
+    <div ref={rootRef} className="h-screen overflow-hidden font-sans bg-slate-950">
 
       {/* ── Preloaded app iframes ─────────────────────────────────────────────
           All apps with URLs are mounted immediately and kept alive.
@@ -114,7 +186,11 @@ export default function App() {
           pointerEvents: activeApp ? 'none' : 'auto',
         }}
       >
-        <TopBar onSettingsOpen={() => setSettingsOpen(true)} />
+        <TopBar
+          onSettingsOpen={() => setSettingsOpen(true)}
+          isFullscreen={isFullscreen}
+          onFullscreenToggle={toggleFullscreen}
+        />
 
         <main className="flex-1 flex flex-col items-center justify-center overflow-y-auto scroll-thin">
           <div className="mb-10 text-center animate-enter">

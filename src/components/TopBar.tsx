@@ -6,9 +6,17 @@ interface TopBarProps {
   onSettingsOpen: () => void
   activeApp?: AppConfig | null
   onBack?: () => void
+  isFullscreen?: boolean
+  onFullscreenToggle?: () => void
 }
 
-export const TopBar = ({ onSettingsOpen, activeApp, onBack }: TopBarProps) => {
+export const TopBar = ({
+  onSettingsOpen,
+  activeApp,
+  onBack,
+  isFullscreen = false,
+  onFullscreenToggle,
+}: TopBarProps) => {
   const [now, setNow] = useState(new Date())
 
   useEffect(() => {
@@ -58,6 +66,17 @@ export const TopBar = ({ onSettingsOpen, activeApp, onBack }: TopBarProps) => {
         </div>
 
         <div className="w-px h-5 bg-slate-800 hidden sm:block" />
+
+        {onFullscreenToggle && (
+          <button
+            onClick={onFullscreenToggle}
+            className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-500 hover:text-white hover:bg-slate-800 border border-transparent hover:border-slate-700 transition"
+            title={isFullscreen ? 'Exit Fullscreen (Esc)' : 'Enter Fullscreen'}
+            aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
+          >
+            <Icon name={isFullscreen ? 'compress' : 'expand'} className="w-[18px] h-[18px]" />
+          </button>
+        )}
 
         {!activeApp && (
           <button

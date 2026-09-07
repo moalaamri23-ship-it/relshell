@@ -38,6 +38,45 @@ A hover zone (`w-16 h-16`, top-left corner) reveals a back arrow button (`opacit
 
 `loadApps()` migrates any cached `http://` URLs to `https://` on load (mixed-content fix for Cloudflare deployments).
 
+## Fullscreen
+
+The shell fullscreens the **root wrapper div** (`rootRef`), never `document.documentElement`.
+
+**Chromium will not grant fullscreen to a cross-origin iframe while the embedding
+document already holds fullscreen.** The child's `requestFullscreen()` never
+settles — it does not reject, and no `fullscreenerror` fires — so an embedded
+app's own fullscreen button looks dead. The request cannot be revived: releasing
+the shell's fullscreen afterwards does not complete it. Verified by A/B test; a
+same-origin child in the identical markup works.
+
+So the shell steps aside *before* the app asks, over `postMessage`:
+
+| Direction | Message | When |
+|---|---|---|
+| app → shell | `{ fs: 'request' }` | from the click, before requesting |
+| shell → app | `{ fs: 'clear' }` | after the shell has exited its own fullscreen |
+| app → shell | `{ fs: 'released' }` | when the app leaves fullscreen |
+
+The app keeps transient activation across the round-trip, so its request still
+counts as user-initiated. `{ fs: 'released' }` makes the shell re-enter — which
+works only when the app exited from a **click** (activation propagates up the
+frame tree); after **Esc** there is no activation and the shell stays windowed.
+
+Messages are honoured only from an origin matching one of the configured app
+URLs. Do **not** add "auto-heal" that exits on seeing `document.fullscreenElement
+=== iframe` — after a handshake that is the success state, and exiting there
+tears down the app's fullscreen.
+
+App side: `services/ShellFullscreen.ts` in each embedded app (currently only
+FMECA Studio has a fullscreen button; SAP Auditor and Pro ODS Simulator use no
+Fullscreen API). A host that does not speak the protocol never replies, so a
+400 ms timeout requests anyway — standalone behaviour is unchanged.
+
+**Esc always exits every level at once.** `exitFullscreen()` pops one level, but
+a user-initiated Esc runs the spec's *fully exit fullscreen* algorithm. The
+Escape handler in `App.tsx` returns early while `document.fullscreenElement` is
+set, so one Esc does not also unwind shell state.
+
 ## Design System
 
 Follows the **reliability_app_UI** skill spec with a dark-launcher override:
