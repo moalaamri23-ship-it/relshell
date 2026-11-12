@@ -3,6 +3,14 @@ import type { AppConfig, AccentColor } from './types'
 export const STORAGE_KEY = 'reliability-hub-apps'
 export const FAVICON_PREFIX = 'reliability-hub-favicon-'
 
+/**
+ * Settings every embedded app shares: the OXY Connection Flow URL and the engineer's
+ * company email. Kept in the shell and handed to built-in apps over postMessage
+ * (see `src/sharedSettings.ts`), since each app runs on its own origin and cannot
+ * read another's storage.
+ */
+export const SHARED_SETTINGS_KEY = 'reliability-hub-shared-settings'
+
 export const DEFAULT_APPS: AppConfig[] = [
   {
     id: 'fmeca-studio',
@@ -47,6 +55,11 @@ export const DEFAULT_APPS: AppConfig[] = [
     accent: 'purple',
   },
 ]
+
+/** Built-in apps ship with the shell: their URL is fixed and they cannot be deleted. */
+export const BUILTIN_APP_IDS = new Set(DEFAULT_APPS.map(a => a.id))
+
+export const isBuiltinApp = (app: AppConfig): boolean => BUILTIN_APP_IDS.has(app.id)
 
 export interface AccentMeta {
   bar: string

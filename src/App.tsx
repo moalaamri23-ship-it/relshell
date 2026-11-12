@@ -4,7 +4,8 @@ import { AppTile } from './components/AppTile'
 import { SettingsPanel } from './components/SettingsPanel'
 import { ManualViewer } from './components/ManualViewer'
 import { Icon } from './components/Icon'
-import { DEFAULT_APPS, STORAGE_KEY } from './constants'
+import { DEFAULT_APPS, STORAGE_KEY, isBuiltinApp } from './constants'
+import { loadShared, saveShared, settingsMessage, type SharedSettings } from './sharedSettings'
 import type { AppConfig } from './types'
 
 const ANIM_CLASSES = [
@@ -26,11 +27,31 @@ const loadApps = (): AppConfig[] => {
         ...a,
         url: a.url ? a.url.replace(/^http:\/\//i, 'https://') : a.url,
       }))
-      return migrated
+      return withBuiltins(migrated)
     }
   } catch { /* ignore */ }
   return DEFAULT_APPS
 }
+
+/**
+ * Built-in apps always come from the code: their URL is forced to the shipped one,
+ * and any missing (deleted before they were locked, or added in a later release)
+ * are appended. Name, description, accent and order stay as the engineer set them.
+ */
+const withBuiltins = (apps: AppConfig[]): AppConfig[] => {
+  const shipped = new Map(DEFAULT_APPS.map(a => [a.id, a]))
+  const kept = apps.map(a => {
+    const d = shipped.get(a.id)
+    return d ? { ...a, url: d.url } : a
+  })
+  const missing = DEFAULT_APPS.filter(d => !kept.some(a => a.id === d.id))
+  return [...kept, ...missing]
+}
+
+/** Origins allowed to receive the shared settings: built-in apps only. */
+const BUILTIN_ORIGINS = new Set(
+  DEFAULT_APPS.flatMap(a => { try { return [new URL(a.url).origin] } catch { return [] } })
+)
 
 const saveApps = (apps: AppConfig[]) =>
   localStorage.setItem(STORAGE_KEY, JSON.stringify(apps))
@@ -41,7 +62,36 @@ export default function App() {
   const [activeApp, setActiveApp] = useState<AppConfig | null>(null)
   const [manualApp, setManualApp] = useState<AppConfig | null>(null)
   const [isFullscreen, setIsFullscreen] = useState(false)
+  const [shared, setSharedState] = useState<SharedSettings>(loadShared)
+  const sharedRef = useRef(shared)
+  const frameRefs = useRef(new Map<string, HTMLIFrameElement>())
   const rootRef = useRef<HTMLDivElement>(null)
+
+  // Save, then push to every built-in app already loaded so it picks the values up
+  // without a reload. Apps that load later ask for them themselves.
+  const setShared = (next: SharedSettings) => {
+    sharedRef.current = next
+    setSharedState(next)
+    saveShared(next)
+    const msg = settingsMessage(next)
+    for (const app of apps) {
+      if (!isBuiltinApp(app)) continue
+      const frame = frameRefs.current.get(app.id)
+      try { frame?.contentWindow?.postMessage(msg, new URL(app.url).origin) } catch { /* not loaded */ }
+    }
+  }
+
+  // An app asks for the shared settings when it loads. Answer built-in origins only.
+  useEffect(() => {
+    const onMessage = (e: MessageEvent) => {
+      const data = e.data as { cfg?: string } | null
+      if (!data || data.cfg !== 'request') return
+      if (!BUILTIN_ORIGINS.has(e.origin)) return
+      ;(e.source as Window | null)?.postMessage(settingsMessage(sharedRef.current), e.origin)
+    }
+    window.addEventListener('message', onMessage)
+    return () => window.removeEventListener('message', onMessage)
+  }, [])
 
   const setApps = (next: AppConfig[]) => {
     setAppsState(next)
@@ -154,6 +204,10 @@ export default function App() {
             }}
           >
             <iframe
+              ref={el => {
+                if (el) frameRefs.current.set(app.id, el)
+                else frameRefs.current.delete(app.id)
+              }}
               src={app.url}
               title={app.name}
               className="w-full h-full border-0"
@@ -235,6 +289,8 @@ export default function App() {
           open={settingsOpen}
           apps={apps}
           onAppsChange={setApps}
+          shared={shared}
+          onSharedChange={setShared}
           onClose={() => setSettingsOpen(false)}
         />
       </div>

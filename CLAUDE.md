@@ -77,6 +77,28 @@ a user-initiated Esc runs the spec's *fully exit fullscreen* algorithm. The
 Escape handler in `App.tsx` returns early while `document.fullscreenElement` is
 set, so one Esc does not also unwind shell state.
 
+## Shared settings and built-in apps
+
+Settings → **Shared settings** holds the OXY Connection Flow URL and the engineer's
+company email (`localStorage["reliability-hub-shared-settings"]`, `src/sharedSettings.ts`).
+Each app runs on its own origin and cannot read the shell's storage, so the values go
+over `postMessage`:
+
+| Direction | Message | When |
+|---|---|---|
+| app → shell | `{ cfg: 'request' }` | when the app loads inside a frame |
+| shell → app | `{ cfg: 'settings', aiRouterUrl?, engineerEmail? }` | in reply, and to every built-in frame on Save |
+
+Blank fields are left out. The URL is a signed secret, so the shell answers **built-in
+app origins only** (`DEFAULT_APPS`), never apps added by hand. App side:
+`ShellSettings.ts` / `shellSettings.ts` in each app accepts the reply only from the
+shell's origin (or localhost) and lets a filled value replace the app's own, so a
+rotated URL reaches every app. Only FMECA Studio has an email field today.
+
+Built-in apps (`BUILTIN_APP_IDS`) have a fixed URL, no URL field in Edit and no Delete.
+`loadApps()` forces their URL back to the shipped one and re-adds any missing; only
+hand-added apps keep a URL field and Delete.
+
 ## Install page (PWA)
 
 `/downloadapp` is `public/downloadapp.html`, a static page shared in Teams so

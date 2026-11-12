@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import type { AppConfig, AccentColor } from '../types'
-import { ACCENT_META, ACCENT_COLORS, FAVICON_PREFIX } from '../constants'
+import { ACCENT_META, ACCENT_COLORS, FAVICON_PREFIX, isBuiltinApp } from '../constants'
+import { isValidEmail, isValidFlowUrl, type SharedSettings } from '../sharedSettings'
 import { Icon } from './Icon'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -18,23 +19,44 @@ interface SettingsPanelProps {
   open: boolean
   apps: AppConfig[]
   onAppsChange: (apps: AppConfig[]) => void
+  shared: SharedSettings
+  onSharedChange: (shared: SharedSettings) => void
   onClose: () => void
 }
 
 // ─── Settings panel ───────────────────────────────────────────────────────────
 
-export const SettingsPanel = ({ open, apps, onAppsChange, onClose }: SettingsPanelProps) => {
+export const SettingsPanel = ({ open, apps, onAppsChange, shared, onSharedChange, onClose }: SettingsPanelProps) => {
   const [view, setView] = useState<'list' | 'form'>('list')
   const [editTarget, setEditTarget] = useState<AppConfig | null>(null)
   const [form, setForm] = useState<FormState>(EMPTY_FORM)
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
+  const [sharedDraft, setSharedDraft] = useState<SharedSettings>(shared)
+  const [sharedSaved, setSharedSaved] = useState(false)
 
   useEffect(() => {
     if (open) {
       setView('list')
       setDeleteConfirmId(null)
+      setSharedDraft(shared)
+      setSharedSaved(false)
     }
-  }, [open])
+  }, [open]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const urlOk = isValidFlowUrl(sharedDraft.aiRouterUrl)
+  const emailOk = isValidEmail(sharedDraft.engineerEmail)
+  const sharedDirty =
+    sharedDraft.aiRouterUrl.trim() !== shared.aiRouterUrl.trim() ||
+    sharedDraft.engineerEmail.trim() !== shared.engineerEmail.trim()
+
+  const saveShared = () => {
+    if (!urlOk || !emailOk) return
+    onSharedChange({
+      aiRouterUrl: sharedDraft.aiRouterUrl.trim(),
+      engineerEmail: sharedDraft.engineerEmail.trim(),
+    })
+    setSharedSaved(true)
+  }
 
   // ── Helpers ───────────────────────────────────────────────────────────────
 
@@ -52,7 +74,8 @@ export const SettingsPanel = ({ open, apps, onAppsChange, onClose }: SettingsPan
 
   const handleSave = () => {
     const name = form.name.trim()
-    const url  = form.url.trim()
+    // A built-in app's URL is fixed by the shell; only hand-added apps take the form's.
+    const url  = editTarget && isBuiltinApp(editTarget) ? editTarget.url : form.url.trim()
     const description = form.description.trim()
     if (!name) return
 
@@ -70,7 +93,8 @@ export const SettingsPanel = ({ open, apps, onAppsChange, onClose }: SettingsPan
 
   const handleDelete = (id: string) => {
     const app = apps.find(a => a.id === id)
-    if (app?.url) localStorage.removeItem(FAVICON_PREFIX + app.url)
+    if (!app || isBuiltinApp(app)) return
+    if (app.url) localStorage.removeItem(FAVICON_PREFIX + app.url)
     onAppsChange(apps.filter(a => a.id !== id))
     setDeleteConfirmId(null)
   }
@@ -134,12 +158,63 @@ export const SettingsPanel = ({ open, apps, onAppsChange, onClose }: SettingsPan
       {view === 'list' ? (
         <>
           <div className="flex-1 overflow-y-auto scroll-thin px-4 py-4 space-y-2">
+            {/* Shared settings — handed to every built-in app */}
+            <section className="bg-white border border-slate-200 rounded shadow-sm p-4 mb-4 space-y-3">
+              <div>
+                <div className="text-sm font-bold text-slate-900">Shared settings</div>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Filled into every built-in app when it opens here. Apps you add yourself do not receive them.
+                </p>
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1 ml-1">
+                  OXY Connection Flow URL
+                </label>
+                <input
+                  type="password"
+                  autoComplete="off"
+                  value={sharedDraft.aiRouterUrl}
+                  onChange={e => { setSharedDraft(d => ({ ...d, aiRouterUrl: e.target.value })); setSharedSaved(false) }}
+                  placeholder="https://..."
+                  className={`w-full bg-white border rounded p-2 text-sm font-mono outline-none transition shadow-sm ${urlOk ? 'border-slate-200 focus:border-brand-500' : 'border-red-400'}`}
+                />
+                {!urlOk && <p className="text-xs text-red-500 mt-1 ml-1">Enter an https:// URL.</p>}
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1 ml-1">
+                  Company email
+                </label>
+                <input
+                  type="email"
+                  autoComplete="email"
+                  value={sharedDraft.engineerEmail}
+                  onChange={e => { setSharedDraft(d => ({ ...d, engineerEmail: e.target.value })); setSharedSaved(false) }}
+                  placeholder="name@company.com"
+                  className={`w-full bg-white border rounded p-2 text-sm outline-none transition shadow-sm ${emailOk ? 'border-slate-200 focus:border-brand-500' : 'border-red-400'}`}
+                />
+                {!emailOk && <p className="text-xs text-red-500 mt-1 ml-1">Enter a valid email.</p>}
+              </div>
+              <div className="flex items-center justify-end gap-3">
+                {sharedSaved && !sharedDirty && <span className="text-xs text-emerald-600 font-semibold">Saved</span>}
+                <button
+                  onClick={saveShared}
+                  disabled={!sharedDirty || !urlOk || !emailOk}
+                  className="px-4 py-2 bg-slate-900 text-white rounded font-bold text-sm disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-800 transition flex items-center gap-2"
+                >
+                  <Icon name="save" className="w-4 h-4" />
+                  Save
+                </button>
+              </div>
+            </section>
+
+            <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 ml-1 pt-1">Applications</div>
             {apps.length === 0 && (
               <p className="text-center text-slate-400 text-sm py-10">No apps configured.</p>
             )}
             {apps.map((app, idx) => {
               const meta = ACCENT_META[app.accent]
-              const isConfirming = deleteConfirmId === app.id
+              const builtin = isBuiltinApp(app)
+              const isConfirming = !builtin && deleteConfirmId === app.id
               return (
                 <div
                   key={app.id}
@@ -173,7 +248,9 @@ export const SettingsPanel = ({ open, apps, onAppsChange, onClose }: SettingsPan
                       {/* App info */}
                       <div className="flex-1 min-w-0">
                         <div className="text-sm font-bold text-slate-900 truncate">{app.name}</div>
-                        <div className="text-xs text-slate-400 truncate font-mono">{app.url || 'No URL'}</div>
+                        {builtin
+                          ? <div className="text-xs text-slate-400 truncate">Built-in</div>
+                          : <div className="text-xs text-slate-400 truncate font-mono">{app.url || 'No URL'}</div>}
                       </div>
 
                       {/* Actions */}
@@ -201,13 +278,15 @@ export const SettingsPanel = ({ open, apps, onAppsChange, onClose }: SettingsPan
                         >
                           <Icon name="gear" className="w-3.5 h-3.5" />
                         </button>
-                        <button
-                          onClick={() => setDeleteConfirmId(app.id)}
-                          className="w-7 h-7 flex items-center justify-center rounded text-slate-300 hover:text-red-500 transition"
-                          title="Delete"
-                        >
-                          <Icon name="trash" className="w-3.5 h-3.5" />
-                        </button>
+                        {!builtin && (
+                          <button
+                            onClick={() => setDeleteConfirmId(app.id)}
+                            className="w-7 h-7 flex items-center justify-center rounded text-slate-300 hover:text-red-500 transition"
+                            title="Delete"
+                          >
+                            <Icon name="trash" className="w-3.5 h-3.5" />
+                          </button>
+                        )}
                       </div>
                     </div>
                   )}
@@ -244,8 +323,8 @@ export const SettingsPanel = ({ open, apps, onAppsChange, onClose }: SettingsPan
               />
             </div>
 
-            {/* URL */}
-            <div>
+            {/* URL — hand-added apps only; a built-in app's URL is fixed by the shell */}
+            {!(editTarget && isBuiltinApp(editTarget)) && <div>
               <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1 ml-1">
                 URL
               </label>
@@ -259,7 +338,7 @@ export const SettingsPanel = ({ open, apps, onAppsChange, onClose }: SettingsPan
               <p className="text-xs text-slate-400 mt-1 ml-1">
                 Icon is fetched from this URL automatically
               </p>
-            </div>
+            </div>}
 
             {/* Description */}
             <div>
