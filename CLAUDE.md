@@ -77,6 +77,24 @@ a user-initiated Esc runs the spec's *fully exit fullscreen* algorithm. The
 Escape handler in `App.tsx` returns early while `document.fullscreenElement` is
 set, so one Esc does not also unwind shell state.
 
+## Install page (PWA)
+
+`/downloadapp` is `public/downloadapp.html`, a static page shared in Teams so
+people can install the shell as a PWA from Edge or Chrome. It is not part of the
+React app and the main UI has no install button.
+
+- One app identity: `/` and `/downloadapp` link the same
+  `public/manifest.webmanifest` (`id` `/`, `start_url` `/`, `scope` `/`,
+  `display: standalone`), so installing from the install page opens the normal shell.
+- `public/sw.js` exists only for installability: navigations go to the network,
+  nothing is cached, an offline page answers only when the network is down.
+- Routing: Workers static assets' default `html_handling` serves
+  `downloadapp.html` at `/downloadapp` and 307s `/downloadapp.html` and
+  `/downloadapp/` to it. Do not move it to `downloadapp/index.html` (that makes
+  `/downloadapp` redirect to the slash form).
+- Teams' embedded browser (WebView2) cannot install apps; the page detects a
+  frame or a `Teams/` UA and tells the user to open the link in Edge.
+
 ## Design System
 
 Follows the **reliability_app_UI** skill spec with a dark-launcher override:

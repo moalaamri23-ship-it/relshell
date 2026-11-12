@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0f172a">
+  <title>Install RelShell</title>
+  <!-- Same manifest link as / : one app identity (id "/", start_url "/"), so
+       installing from here installs the normal shell. -->
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
+  <link rel="apple-touch-icon" href="/icon-192.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      background-color: #0f172a;
+      background-image: radial-gradient(rgba(148,163,184,0.12) 1px, transparent 1px);
+      background-size: 22px 22px;
+      color: #cbd5e1;
+      font-family: Inter, system-ui, sans-serif;
+      display: flex; align-items: center; justify-content: center;
+      padding: 24px 16px;
+    }
+    main { width: 100%; max-width: 420px; text-align: center; }
+    .logo { width: 88px; height: 88px; border-radius: 20px; display: block; margin: 0 auto 20px; box-shadow: 0 10px 30px rgba(59,130,246,0.25); }
+    h1 { margin: 0 0 6px; color: #f8fafc; font-size: 26px; font-weight: 700; letter-spacing: -0.01em; }
+    .sub { margin: 0 0 28px; color: #94a3b8; font-size: 14px; }
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      min-width: 220px; padding: 13px 24px; border: 0; border-radius: 10px;
+      background: #2563eb; color: #fff; font: 600 15px Inter, system-ui, sans-serif;
+      text-decoration: none; cursor: pointer; transition: background .15s, opacity .15s;
+    }
+    .btn:hover { background: #1d4ed8; }
+    .btn:focus-visible { outline: 2px solid #60a5fa; outline-offset: 3px; }
+    .btn[disabled] { opacity: .55; cursor: default; background: #2563eb; }
+    .btn svg { width: 18px; height: 18px; }
+    .help {
+      margin-top: 28px; padding: 16px 18px; text-align: left;
+      background: rgba(30,41,59,0.85); border: 1px solid #334155; border-radius: 12px;
+      font-size: 13.5px; line-height: 1.55;
+    }
+    .help h2 { margin: 0 0 8px; color: #f1f5f9; font-size: 14px; font-weight: 600; }
+    .help ol { margin: 0; padding-left: 20px; }
+    .help li + li { margin-top: 4px; }
+    .help p { margin: 0 0 8px; }
+    .help p:last-child { margin-bottom: 0; }
+    .help b { color: #e2e8f0; font-weight: 600; }
+    .help + .help { margin-top: 12px; }
+    .warn { border-color: rgba(245,158,11,0.5); }
+    .link-row { display: flex; gap: 8px; margin-top: 10px; }
+    .link-row input {
+      flex: 1; min-width: 0; padding: 8px 10px; border-radius: 8px;
+      border: 1px solid #475569; background: #0f172a; color: #e2e8f0;
+      font: 12.5px ui-monospace, Menlo, monospace;
+    }
+    .link-row button {
+      padding: 8px 12px; border-radius: 8px; border: 1px solid #475569;
+      background: #1e293b; color: #e2e8f0; font: 500 12.5px Inter, system-ui, sans-serif; cursor: pointer;
+    }
+    .link-row button:hover { background: #334155; }
+    .status { margin-top: 14px; min-height: 18px; font-size: 13px; color: #94a3b8; }
+    [hidden] { display: none !important; }
+  </style>
+</head>
+<body>
+  <main>
+    <img class="logo" src="/icon-192.png" alt="" width="88" height="88">
+    <h1>RelShell</h1>
+    <p class="sub">Reliability Shell for Windows</p>
+
+    <button id="install" class="btn" type="button" disabled>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m0 0-4-4m4 4 4-4M5 21h14"/></svg>
+      Install RelShell
+    </button>
+    <a id="open" class="btn" href="/" hidden>Open RelShell</a>
+    <div id="status" class="status" role="status" aria-live="polite"></div>
+
+    <section id="teams" class="help warn" hidden>
+      <h2>Open this link in Edge</h2>
+      <p>This page is open inside Teams, which can't install apps. Copy the link, paste it into <b>Microsoft Edge</b>, then click <b>Install RelShell</b> there.</p>
+      <div class="link-row">
+        <input id="url" type="text" readonly aria-label="Install page link">
+        <button id="copy" type="button">Copy</button>
+      </div>
+    </section>
+
+    <section id="manual" class="help" hidden>
+      <h2>Install from the browser menu</h2>
+      <ol>
+        <li>In <b>Microsoft Edge</b>, click <b>Settings and more (…)</b> at the top right.</li>
+        <li>Choose <b>Apps</b> → <b>Install this site as an app</b>.</li>
+        <li>Click <b>Install</b>.</li>
+      </ol>
+      <p style="margin-top:10px">In <b>Chrome</b>: <b>⋮</b> → <b>Cast, save and share</b> → <b>Install page as app…</b></p>
+      <p>Already installed? Edge shows <b>Open in app</b> in the address bar, or find RelShell in the Start menu.</p>
+    </section>
+  </main>
+
+  <script>
+  (function () {
+    var installBtn = document.getElementById('install')
+    var openLink = document.getElementById('open')
+    var statusEl = document.getElementById('status')
+    var manual = document.getElementById('manual')
+    var teams = document.getElementById('teams')
+    var deferred = null
+
+    function standalone() {
+      return window.matchMedia('(display-mode: standalone)').matches ||
+             window.matchMedia('(display-mode: window-controls-overlay)').matches ||
+             window.navigator.standalone === true
+    }
+
+    // Teams opens links in its own WebView2 window or frames the page in a
+    // tab; neither can install a PWA. A frame is the sure sign; the Teams UA
+    // token catches the classic client.
+    function inTeams() {
+      var framed = false
+      try { framed = window.self !== window.top } catch (e) { framed = true }
+      return framed || /Teams\//i.test(navigator.userAgent)
+    }
+
+    function showOpen() {
+      installBtn.hidden = true
+      manual.hidden = true
+      teams.hidden = true
+      openLink.hidden = false
+    }
+
+    function showManual() {
+      manual.hidden = false
+    }
+
+    if (standalone()) {
+      showOpen()
+      statusEl.textContent = 'RelShell is installed.'
+      return
+    }
+
+    if (inTeams()) {
+      document.getElementById('url').value = location.origin + '/downloadapp'
+      teams.hidden = false
+      document.getElementById('copy').addEventListener('click', function () {
+        var input = document.getElementById('url')
+        var btn = this
+        function done() { btn.textContent = 'Copied' }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(input.value).then(done, function () {
+            input.select(); try { document.execCommand('copy'); done() } catch (e) {}
+          })
+        } else {
+          input.select(); try { document.execCommand('copy'); done() } catch (e) {}
+        }
+      })
+    }
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js', { scope: '/', updateViaCache: 'none' }).catch(function () {})
+    }
+
+    window.addEventListener('beforeinstallprompt', function (e) {
+      e.preventDefault()
+      deferred = e
+      installBtn.disabled = false
+      manual.hidden = true
+      statusEl.textContent = ''
+    })
+
+    window.addEventListener('appinstalled', function () {
+      deferred = null
+      showOpen()
+      statusEl.textContent = 'Installed. RelShell is in your Start menu.'
+    })
+
+    installBtn.addEventListener('click', function () {
+      if (!deferred) { showManual(); return }
+      var e = deferred
+      deferred = null
+      e.prompt()
+      e.userChoice.then(function (choice) {
+        if (choice.outcome !== 'accepted') {
+          // A prompt can be shown once; the browser fires
+          // beforeinstallprompt again later if it allows another try.
+          installBtn.disabled = true
+          statusEl.textContent = 'Install cancelled.'
+          showManual()
+        }
+      })
+    })
+
+    // No prompt yet: let the button explain instead of staying dead, and show
+    // the menu route once the browser has had time to decide.
+    setTimeout(function () {
+      if (deferred || standalone()) return
+      installBtn.disabled = false
+      if (!inTeams()) showManual()
+    }, 2500)
+  })()
+  </script>
+</body>
+</html>
