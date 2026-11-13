@@ -98,51 +98,58 @@ export default function App() {
     return () => window.removeEventListener('message', onMessage)
   }, [])
 
-  // Inside Teams, the signed-in user's email replaces the typed one and goes to
-  // every built-in app like a Save would.
-  useEffect(() => {
-    let cancelled = false
-    getTeamsIdentity().then(id => {
-      if (cancelled || !id) return
-      setInTeams(true)
-      // Keep a name already looked up for this email until a new one arrives.
-      setIdentity(prev => {
-        const name = id.name || (prev?.email.toLowerCase() === id.email.toLowerCase() ? prev.name : '')
-        const next = { email: id.email, name }
-        saveIdentity(next)
-        return next
-      })
-      if (sharedRef.current.engineerEmail.trim().toLowerCase() !== id.email.toLowerCase()) {
-        setShared({ ...sharedRef.current, engineerEmail: id.email })
-      }
-    })
-    return () => { cancelled = true }
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Teams often sends no name. Ask the flow for the address-book name of the
-  // current email (typed or from Teams); once per email and flow URL.
-  const teamsHasName = !!identity?.name && identity.email.toLowerCase() === shared.engineerEmail.trim().toLowerCase()
-  const profileAsked = useRef('')
-  useEffect(() => {
-    const email = shared.engineerEmail.trim()
-    const url = shared.aiRouterUrl.trim()
-    const key = `${email.toLowerCase()}|${url}`
-    if (!email || !url || profileAsked.current === key) return
-    profileAsked.current = key
-    let cancelled = false
+  // The address-book name, from the flow (router task `user_profile`). It only
+  // changes with the email or flow URL, so the shell asks on Settings → Save, and
+  // otherwise only when it holds no name for the current email (first run, or
+  // Teams brought a different email). A refresh does not call the flow.
+  const lookupName = (s: SharedSettings) => {
+    const email = s.engineerEmail.trim()
+    const url = s.aiRouterUrl.trim()
+    if (!email || !url) return
     fetchProfileName(url, email).then(name => {
-      if (cancelled || !name) return
+      if (!name || sharedRef.current.engineerEmail.trim().toLowerCase() !== email.toLowerCase()) return
       const next = { email, name }
       setIdentity(next)
       saveIdentity(next)
     })
+  }
+
+  const hasNameFor = (id: Identity | null, email: string) =>
+    !!id?.name && id.email.toLowerCase() === email.trim().toLowerCase()
+
+  // Inside Teams, the signed-in user's email replaces the typed one and goes to
+  // every built-in app like a Save would. Then, in Teams or not, fill the name
+  // once if none is held for the email.
+  useEffect(() => {
+    let cancelled = false
+    getTeamsIdentity().then(id => {
+      if (cancelled) return
+      let held = loadIdentity()
+      if (id) {
+        setInTeams(true)
+        // Teams' own name wins; else keep a name already held for this email.
+        const next = { email: id.email, name: id.name || (hasNameFor(held, id.email) ? held!.name : '') }
+        setIdentity(next)
+        saveIdentity(next)
+        held = next
+        if (sharedRef.current.engineerEmail.trim().toLowerCase() !== id.email.toLowerCase()) {
+          setShared({ ...sharedRef.current, engineerEmail: id.email })
+        }
+      }
+      if (!hasNameFor(held, sharedRef.current.engineerEmail)) lookupName(sharedRef.current)
+    })
     return () => { cancelled = true }
-  }, [shared.engineerEmail, shared.aiRouterUrl])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const saveSharedSettings = (next: SharedSettings) => {
+    setShared(next)
+    lookupName(next)
+  }
 
   // The address-book name when known for this email, else one read from the email.
   const welcomeName = (() => {
     const email = shared.engineerEmail.trim()
-    if (teamsHasName) return identity!.name
+    if (hasNameFor(identity, email)) return identity!.name
     return email ? nameFromEmail(email) : ''
   })()
 
@@ -344,7 +351,7 @@ export default function App() {
           apps={apps}
           onAppsChange={setApps}
           shared={shared}
-          onSharedChange={setShared}
+          onSharedChange={saveSharedSettings}
           emailFromTeams={inTeams}
           onClose={() => setSettingsOpen(false)}
         />

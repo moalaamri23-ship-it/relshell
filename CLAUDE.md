@@ -108,7 +108,8 @@ UPN (pushed to built-in apps like a Save) and locks the field in Settings
 ("From your Microsoft Teams account"). The top bar shows "Welcome <name>" with the address-book name **exactly as Microsoft
 shows it** ("Al Amri, Mohamed S"; never reordered). Teams usually leaves `displayName`
 out of the context, so the shell asks the OXY Connection Flow (router task
-`user_profile`, router v1.5, SharePoint user profiles) once per email and flow URL;
+`user_profile`, router v1.5, SharePoint user profiles) on Settings → Save, and on load
+only when it holds no name for the current email (a refresh does not call the flow);
 this works in a browser too when the email and flow URL are set. Only when neither
 source has a name is one read from the email (`nameFromEmail`). The last answer is kept in `localStorage["reliability-hub-identity"]`
 so the greeting shows before Teams replies. Outside Teams (browser, preview, any other
