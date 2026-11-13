@@ -10,6 +10,7 @@ export const FAVICON_PREFIX = 'reliability-hub-favicon-'
  * read another's storage.
  */
 export const SHARED_SETTINGS_KEY = 'reliability-hub-shared-settings'
+export const IDENTITY_KEY = 'reliability-hub-identity'
 
 export const DEFAULT_APPS: AppConfig[] = [
   {

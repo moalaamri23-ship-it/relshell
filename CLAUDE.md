@@ -99,6 +99,20 @@ Built-in apps (`BUILTIN_APP_IDS`) have a fixed URL, no URL field in Edit and no 
 `loadApps()` forces their URL back to the shipped one and re-adds any missing; only
 hand-added apps keep a URL field and Delete.
 
+### Identity from Teams
+
+The shell is a custom Teams app, so Teams gives it context. `src/teamsIdentity.ts`
+loads `@microsoft/teams-js` (lazy chunk, only when framed), and `app.getContext()`
+returns the user's UPN and address-book name. App then sets **Company email** to that
+UPN (pushed to built-in apps like a Save) and locks the field in Settings
+("From your Microsoft Teams account"). The top bar shows "Welcome, <name>": Teams'
+`displayName` (with "Last, First" flipped by `tidyName`), else a name read from the
+email (`nameFromEmail`). The last answer is kept in `localStorage["reliability-hub-identity"]`
+so the greeting shows before Teams replies. Outside Teams (browser, preview, any other
+frame) `app.initialize()` gets no answer; after 5 s the shell keeps the typed email.
+Teams marks these values a **hint, not proof**: use them to fill and greet, never to
+grant access.
+
 ## Install page (PWA)
 
 `/downloadapp` is `public/downloadapp.html`, a static page shared in Teams so

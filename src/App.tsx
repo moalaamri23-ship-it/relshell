@@ -6,6 +6,7 @@ import { ManualViewer } from './components/ManualViewer'
 import { Icon } from './components/Icon'
 import { DEFAULT_APPS, STORAGE_KEY, isBuiltinApp } from './constants'
 import { loadShared, saveShared, settingsMessage, type SharedSettings } from './sharedSettings'
+import { getTeamsIdentity, loadIdentity, nameFromEmail, saveIdentity, type Identity } from './teamsIdentity'
 import type { AppConfig } from './types'
 
 const ANIM_CLASSES = [
@@ -64,6 +65,10 @@ export default function App() {
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [shared, setSharedState] = useState<SharedSettings>(loadShared)
   const sharedRef = useRef(shared)
+  // Who Teams says is signed in. Starts from the last answer so the greeting shows
+  // at once; null in a browser, where the typed email stays in charge.
+  const [identity, setIdentity] = useState<Identity | null>(loadIdentity)
+  const [inTeams, setInTeams] = useState(false)
   const frameRefs = useRef(new Map<string, HTMLIFrameElement>())
   const rootRef = useRef<HTMLDivElement>(null)
 
@@ -92,6 +97,29 @@ export default function App() {
     window.addEventListener('message', onMessage)
     return () => window.removeEventListener('message', onMessage)
   }, [])
+
+  // Inside Teams, the signed-in user's email replaces the typed one and goes to
+  // every built-in app like a Save would.
+  useEffect(() => {
+    let cancelled = false
+    getTeamsIdentity().then(id => {
+      if (cancelled || !id) return
+      setInTeams(true)
+      setIdentity(id)
+      saveIdentity(id)
+      if (sharedRef.current.engineerEmail.trim().toLowerCase() !== id.email.toLowerCase()) {
+        setShared({ ...sharedRef.current, engineerEmail: id.email })
+      }
+    })
+    return () => { cancelled = true }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Teams' name when it gave one for this email, else one read from the email.
+  const welcomeName = (() => {
+    const email = shared.engineerEmail.trim()
+    if (identity?.name && identity.email.toLowerCase() === email.toLowerCase()) return identity.name
+    return email ? nameFromEmail(email) : ''
+  })()
 
   const setApps = (next: AppConfig[]) => {
     setAppsState(next)
@@ -242,6 +270,7 @@ export default function App() {
       >
         <TopBar
           onSettingsOpen={() => setSettingsOpen(true)}
+          welcomeName={welcomeName}
           isFullscreen={isFullscreen}
           onFullscreenToggle={toggleFullscreen}
         />
@@ -291,6 +320,7 @@ export default function App() {
           onAppsChange={setApps}
           shared={shared}
           onSharedChange={setShared}
+          emailFromTeams={inTeams}
           onClose={() => setSettingsOpen(false)}
         />
       </div>

@@ -10,6 +10,7 @@
     "deploy": "npm run build && wrangler deploy"
   },
   "dependencies": {
+    "@microsoft/teams-js": "2.58.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },

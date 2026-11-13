@@ -8,6 +8,8 @@ interface TopBarProps {
   onBack?: () => void
   isFullscreen?: boolean
   onFullscreenToggle?: () => void
+  /** Shown as "Welcome, <name>" on the shell's own screen. Blank hides it. */
+  welcomeName?: string
 }
 
 export const TopBar = ({
@@ -16,6 +18,7 @@ export const TopBar = ({
   onBack,
   isFullscreen = false,
   onFullscreenToggle,
+  welcomeName = '',
 }: TopBarProps) => {
   const [now, setNow] = useState(new Date())
 
@@ -56,6 +59,16 @@ export const TopBar = ({
 
       {/* DateTime + gear */}
       <div className="flex items-center gap-4">
+        {!activeApp && welcomeName && (
+          <>
+            <div className="text-sm select-none truncate max-w-[40vw]" title={welcomeName}>
+              <span className="text-slate-500">Welcome, </span>
+              <span className="font-semibold text-white">{welcomeName}</span>
+            </div>
+            <div className="w-px h-5 bg-slate-800 hidden sm:block" />
+          </>
+        )}
+
         <div className="text-right hidden sm:block select-none">
           <div className="text-xs font-mono text-slate-400 tabular-nums leading-none">
             {now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}

@@ -21,12 +21,14 @@ interface SettingsPanelProps {
   onAppsChange: (apps: AppConfig[]) => void
   shared: SharedSettings
   onSharedChange: (shared: SharedSettings) => void
+  /** Inside Teams the email comes from the signed-in account and is not editable. */
+  emailFromTeams?: boolean
   onClose: () => void
 }
 
 // ─── Settings panel ───────────────────────────────────────────────────────────
 
-export const SettingsPanel = ({ open, apps, onAppsChange, shared, onSharedChange, onClose }: SettingsPanelProps) => {
+export const SettingsPanel = ({ open, apps, onAppsChange, shared, onSharedChange, emailFromTeams = false, onClose }: SettingsPanelProps) => {
   const [view, setView] = useState<'list' | 'form'>('list')
   const [editTarget, setEditTarget] = useState<AppConfig | null>(null)
   const [form, setForm] = useState<FormState>(EMPTY_FORM)
@@ -189,10 +191,12 @@ export const SettingsPanel = ({ open, apps, onAppsChange, shared, onSharedChange
                   autoComplete="email"
                   value={sharedDraft.engineerEmail}
                   onChange={e => { setSharedDraft(d => ({ ...d, engineerEmail: e.target.value })); setSharedSaved(false) }}
+                  readOnly={emailFromTeams}
                   placeholder="name@company.com"
-                  className={`w-full bg-white border rounded p-2 text-sm outline-none transition shadow-sm ${emailOk ? 'border-slate-200 focus:border-brand-500' : 'border-red-400'}`}
+                  className={`w-full border rounded p-2 text-sm outline-none transition shadow-sm ${emailFromTeams ? 'bg-slate-50 text-slate-500 cursor-default border-slate-200' : `bg-white ${emailOk ? 'border-slate-200 focus:border-brand-500' : 'border-red-400'}`}`}
                 />
-                {!emailOk && <p className="text-xs text-red-500 mt-1 ml-1">Enter a valid email.</p>}
+                {emailFromTeams && <p className="text-xs text-slate-400 mt-1 ml-1">From your Microsoft Teams account.</p>}
+                {!emailFromTeams && !emailOk && <p className="text-xs text-red-500 mt-1 ml-1">Enter a valid email.</p>}
               </div>
               <div className="flex items-center justify-end gap-3">
                 {sharedSaved && !sharedDirty && <span className="text-xs text-emerald-600 font-semibold">Saved</span>}
