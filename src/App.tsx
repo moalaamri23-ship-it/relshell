@@ -6,7 +6,7 @@ import { ManualViewer } from './components/ManualViewer'
 import { Icon } from './components/Icon'
 import { DEFAULT_APPS, STORAGE_KEY, isBuiltinApp } from './constants'
 import { loadShared, saveShared, settingsMessage, type SharedSettings } from './sharedSettings'
-import { getTeamsIdentity, loadIdentity, nameFromEmail, saveIdentity, type Identity } from './teamsIdentity'
+import { fetchProfileName, getTeamsIdentity, loadIdentity, nameFromEmail, saveIdentity, type Identity } from './teamsIdentity'
 import type { AppConfig } from './types'
 
 const ANIM_CLASSES = [
@@ -105,8 +105,13 @@ export default function App() {
     getTeamsIdentity().then(id => {
       if (cancelled || !id) return
       setInTeams(true)
-      setIdentity(id)
-      saveIdentity(id)
+      // Keep a name already looked up for this email until a new one arrives.
+      setIdentity(prev => {
+        const name = id.name || (prev?.email.toLowerCase() === id.email.toLowerCase() ? prev.name : '')
+        const next = { email: id.email, name }
+        saveIdentity(next)
+        return next
+      })
       if (sharedRef.current.engineerEmail.trim().toLowerCase() !== id.email.toLowerCase()) {
         setShared({ ...sharedRef.current, engineerEmail: id.email })
       }
@@ -114,10 +119,30 @@ export default function App() {
     return () => { cancelled = true }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Teams' name when it gave one for this email, else one read from the email.
+  // Teams often sends no name. Ask the flow for the address-book name of the
+  // current email (typed or from Teams); once per email and flow URL.
+  const teamsHasName = !!identity?.name && identity.email.toLowerCase() === shared.engineerEmail.trim().toLowerCase()
+  const profileAsked = useRef('')
+  useEffect(() => {
+    const email = shared.engineerEmail.trim()
+    const url = shared.aiRouterUrl.trim()
+    const key = `${email.toLowerCase()}|${url}`
+    if (!email || !url || profileAsked.current === key) return
+    profileAsked.current = key
+    let cancelled = false
+    fetchProfileName(url, email).then(name => {
+      if (cancelled || !name) return
+      const next = { email, name }
+      setIdentity(next)
+      saveIdentity(next)
+    })
+    return () => { cancelled = true }
+  }, [shared.engineerEmail, shared.aiRouterUrl])
+
+  // The address-book name when known for this email, else one read from the email.
   const welcomeName = (() => {
     const email = shared.engineerEmail.trim()
-    if (identity?.name && identity.email.toLowerCase() === email.toLowerCase()) return identity.name
+    if (teamsHasName) return identity!.name
     return email ? nameFromEmail(email) : ''
   })()
 

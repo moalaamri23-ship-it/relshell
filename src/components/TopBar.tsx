@@ -8,7 +8,7 @@ interface TopBarProps {
   onBack?: () => void
   isFullscreen?: boolean
   onFullscreenToggle?: () => void
-  /** Shown as "Welcome, <name>" on the shell's own screen. Blank hides it. */
+  /** Shown as "Welcome <name>" on the shell's own screen. Blank hides it. */
   welcomeName?: string
 }
 
@@ -62,7 +62,7 @@ export const TopBar = ({
         {!activeApp && welcomeName && (
           <>
             <div className="text-sm select-none truncate max-w-[40vw]" title={welcomeName}>
-              <span className="text-slate-500">Welcome, </span>
+              <span className="text-slate-500">Welcome </span>
               <span className="font-semibold text-white">{welcomeName}</span>
             </div>
             <div className="w-px h-5 bg-slate-800 hidden sm:block" />

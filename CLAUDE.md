@@ -105,9 +105,12 @@ The shell is a custom Teams app, so Teams gives it context. `src/teamsIdentity.t
 loads `@microsoft/teams-js` (lazy chunk, only when framed), and `app.getContext()`
 returns the user's UPN and address-book name. App then sets **Company email** to that
 UPN (pushed to built-in apps like a Save) and locks the field in Settings
-("From your Microsoft Teams account"). The top bar shows "Welcome, <name>": Teams'
-`displayName` (with "Last, First" flipped by `tidyName`), else a name read from the
-email (`nameFromEmail`). The last answer is kept in `localStorage["reliability-hub-identity"]`
+("From your Microsoft Teams account"). The top bar shows "Welcome <name>" with the address-book name **exactly as Microsoft
+shows it** ("Al Amri, Mohamed S"; never reordered). Teams usually leaves `displayName`
+out of the context, so the shell asks the OXY Connection Flow (router task
+`user_profile`, router v1.5, SharePoint user profiles) once per email and flow URL;
+this works in a browser too when the email and flow URL are set. Only when neither
+source has a name is one read from the email (`nameFromEmail`). The last answer is kept in `localStorage["reliability-hub-identity"]`
 so the greeting shows before Teams replies. Outside Teams (browser, preview, any other
 frame) `app.initialize()` gets no answer; after 5 s the shell keeps the typed email.
 Teams marks these values a **hint, not proof**: use them to fill and greet, never to

@@ -13,7 +13,7 @@ import { IDENTITY_KEY } from './constants'
  */
 export interface Identity {
   email: string
-  /** Display name, "First Last". Empty when Teams sent none. */
+  /** Address-book name exactly as Microsoft shows it ("Al Amri, Mohamed S"). Empty when unknown. */
   name: string
 }
 
@@ -24,16 +24,9 @@ const IN_FRAME = typeof window !== 'undefined' && window.self !== window.top
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
-/**
- * The address book often stores "Last, First" (and sometimes a trailing
- * department in brackets). Turn it into "First Last".
- */
-export const tidyName = (raw: string | undefined): string => {
-  if (!raw) return ''
-  const name = raw.replace(/\s*[([].*?[)\]]\s*/g, ' ').replace(/\s+/g, ' ').trim()
-  const comma = name.split(',').map(s => s.trim()).filter(Boolean)
-  return comma.length === 2 ? `${comma[1]} ${comma[0]}` : name
-}
+/** Microsoft's name as given, only whitespace tidied. Never reordered. */
+export const tidyName = (raw: string | null | undefined): string =>
+  (raw ?? '').replace(/\s+/g, ' ').trim()
 
 /** Last resort when no name is known: "first.last@x" → "First Last". */
 export const nameFromEmail = (email: string): string => {
@@ -62,6 +55,37 @@ export const getTeamsIdentity = async (): Promise<Identity | null> => {
     return { email, name: tidyName(user?.displayName) }
   } catch {
     return null
+  }
+}
+
+/** How long to wait for the flow's profile lookup. Flow calls take 2–20 s. */
+const PROFILE_TIMEOUT_MS = 30000
+
+/**
+ * The address-book name for an email, through the OXY Connection Flow
+ * (router task `user_profile`, v1.5; SharePoint user profiles). Teams often
+ * leaves the name out of its context, so this is where it usually comes from.
+ * Resolves '' when the flow is not set, is older than v1.5, or knows no name.
+ */
+export const fetchProfileName = async (flowUrl: string, email: string): Promise<string> => {
+  if (!/^https:\/\//i.test(flowUrl.trim()) || !EMAIL_RE.test(email)) return ''
+  const ctrl = new AbortController()
+  const timer = setTimeout(() => ctrl.abort(), PROFILE_TIMEOUT_MS)
+  try {
+    // text/plain keeps it a simple request: no CORS preflight (the router accepts both).
+    const res = await fetch(flowUrl.trim(), {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ task: 'user_profile', email }),
+      signal: ctrl.signal,
+    })
+    if (!res.ok) return ''
+    const data = await res.json() as { displayName?: string | null }
+    return tidyName(data.displayName)
+  } catch {
+    return ''
+  } finally {
+    clearTimeout(timer)
   }
 }
 
