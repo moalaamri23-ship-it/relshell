@@ -3,6 +3,7 @@ import type { AppConfig, AccentColor } from '../types'
 import { ACCENT_META, ACCENT_COLORS, FAVICON_PREFIX, isBuiltinApp } from '../constants'
 import { isValidEmail, isValidFlowUrl, type SharedSettings } from '../sharedSettings'
 import { Icon } from './Icon'
+import { storageRemove } from '../safeStorage'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -82,7 +83,7 @@ export const SettingsPanel = ({ open, apps, onAppsChange, shared, onSharedChange
     if (!name) return
 
     if (editTarget) {
-      if (editTarget.url !== url) localStorage.removeItem(FAVICON_PREFIX + editTarget.url)
+      if (editTarget.url !== url) storageRemove(FAVICON_PREFIX + editTarget.url)
       onAppsChange(
         apps.map(a => a.id === editTarget.id ? { ...a, name, url, description, accent: form.accent } : a)
       )
@@ -96,7 +97,7 @@ export const SettingsPanel = ({ open, apps, onAppsChange, shared, onSharedChange
   const handleDelete = (id: string) => {
     const app = apps.find(a => a.id === id)
     if (!app || isBuiltinApp(app)) return
-    if (app.url) localStorage.removeItem(FAVICON_PREFIX + app.url)
+    if (app.url) storageRemove(FAVICON_PREFIX + app.url)
     onAppsChange(apps.filter(a => a.id !== id))
     setDeleteConfirmId(null)
   }

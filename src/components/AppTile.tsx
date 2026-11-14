@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import type { AppConfig, AccentColor } from '../types'
 import { ACCENT_META, FAVICON_PREFIX, getIconCandidates } from '../constants'
 import { Icon } from './Icon'
+import { storageGet, storageRemove, storageSet } from '../safeStorage'
 
 // ─── Letter avatar fallback ───────────────────────────────────────────────────
 
@@ -21,7 +22,7 @@ const LetterAvatar = ({ name, accent }: { name: string; accent: AccentColor }) =
 const AppIcon = ({ url, appName, accent }: { url: string; appName: string; accent: AccentColor }) => {
   // Initial value: whatever we last cached for this URL
   const [iconSrc, setIconSrc] = useState<string | null>(() =>
-    url ? localStorage.getItem(FAVICON_PREFIX + url) : null
+    url ? storageGet(FAVICON_PREFIX + url) : null
   )
 
   useEffect(() => {
@@ -37,7 +38,7 @@ const AppIcon = ({ url, appName, accent }: { url: string; appName: string; accen
 
       img.onload = () => {
         if (cancelled) return
-        localStorage.setItem(FAVICON_PREFIX + url, candidates[idx])
+        storageSet(FAVICON_PREFIX + url, candidates[idx])
         setIconSrc(candidates[idx])
       }
 
@@ -61,7 +62,7 @@ const AppIcon = ({ url, appName, accent }: { url: string; appName: string; accen
         src={iconSrc}
         className="w-full h-full object-cover object-center"
         onError={() => {
-          if (url) localStorage.removeItem(FAVICON_PREFIX + url)
+          if (url) storageRemove(FAVICON_PREFIX + url)
           setIconSrc(null)
         }}
         alt={appName}
@@ -79,7 +80,7 @@ const refetchIcon = (url: string) => {
   const tryNext = (idx: number) => {
     if (idx >= candidates.length) return
     const img = new Image()
-    img.onload = () => localStorage.setItem(FAVICON_PREFIX + url, candidates[idx])
+    img.onload = () => storageSet(FAVICON_PREFIX + url, candidates[idx])
     img.onerror = () => tryNext(idx + 1)
     img.src = candidates[idx]
   }

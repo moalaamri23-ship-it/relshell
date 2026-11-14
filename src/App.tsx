@@ -8,6 +8,7 @@ import { DEFAULT_APPS, STORAGE_KEY, isBuiltinApp } from './constants'
 import { loadShared, saveShared, settingsMessage, type SharedSettings } from './sharedSettings'
 import { fetchProfileName, getTeamsIdentity, loadIdentity, nameFromEmail, saveIdentity, type Identity } from './teamsIdentity'
 import type { AppConfig } from './types'
+import { storageSet } from './safeStorage'
 
 const ANIM_CLASSES = [
   'animate-enter',
@@ -55,7 +56,7 @@ const BUILTIN_ORIGINS = new Set(
 )
 
 const saveApps = (apps: AppConfig[]) =>
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(apps))
+  storageSet(STORAGE_KEY, JSON.stringify(apps))
 
 export default function App() {
   const [apps, setAppsState] = useState<AppConfig[]>(loadApps)

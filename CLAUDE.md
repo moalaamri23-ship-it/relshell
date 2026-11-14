@@ -149,6 +149,8 @@ Follows the **reliability_app_UI** skill spec with a dark-launcher override:
 - App list: `localStorage["reliability-hub-apps"]` — seeded from `DEFAULT_APPS` on first load
 - Favicons: `localStorage["reliability-hub-favicon-{url}"]` — set on successful `<img>` load, updated in background on every tile click
 - No external state library; plain `useState` + `localStorage` write-through
+- **Never touch `localStorage` directly** — use `src/safeStorage.ts` (`storageGet/Set/Remove`) or a try/catch. In Teams the shell is a third-party frame; when the host blocks third-party storage, reading `window.localStorage` throws `SecurityError`, and a read during render blanked the whole tab (AppTile favicon cache, fixed 2026-11-14). Works in Edge because top-level is first-party.
+- Startup never shows a blank page: `StartupErrorBoundary` (`src/components/StartupError.tsx`) wraps `<App>` with an error + Retry screen, and `index.html` holds a boot placeholder that turns into "did not load" + Retry after 15 s if the bundle never renders.
 
 ## Embedded Apps (Cloudflare Workers)
 
