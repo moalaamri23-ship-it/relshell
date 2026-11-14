@@ -354,6 +354,7 @@ export default function App() {
           shared={shared}
           onSharedChange={saveSharedSettings}
           emailFromTeams={inTeams}
+          displayName={welcomeName}
           onClose={() => setSettingsOpen(false)}
         />
       </div>

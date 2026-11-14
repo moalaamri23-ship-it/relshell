@@ -25,12 +25,14 @@ interface SettingsPanelProps {
   onSharedChange: (shared: SharedSettings) => void
   /** Inside Teams the email comes from the signed-in account and is not editable. */
   emailFromTeams?: boolean
+  /** The name the top bar greets, shown in Router Set-up. */
+  displayName?: string
   onClose: () => void
 }
 
 // ─── Settings panel ───────────────────────────────────────────────────────────
 
-export const SettingsPanel = ({ open, apps, onAppsChange, shared, onSharedChange, emailFromTeams = false, onClose }: SettingsPanelProps) => {
+export const SettingsPanel = ({ open, apps, onAppsChange, shared, onSharedChange, emailFromTeams = false, displayName = '', onClose }: SettingsPanelProps) => {
   const [view, setView] = useState<'list' | 'form'>('list')
   const [editTarget, setEditTarget] = useState<AppConfig | null>(null)
   const [form, setForm] = useState<FormState>(EMPTY_FORM)
@@ -215,7 +217,7 @@ export const SettingsPanel = ({ open, apps, onAppsChange, shared, onSharedChange
 
             {/* Teams only: the email that names the copy comes from the signed-in account. */}
             {emailFromTeams && isValidEmail(shared.engineerEmail) && shared.engineerEmail.trim() && (
-              <RouterSetup email={shared.engineerEmail.trim()} open={open} />
+              <RouterSetup email={shared.engineerEmail.trim()} name={displayName} open={open} />
             )}
 
             <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 ml-1 pt-1">Applications</div>

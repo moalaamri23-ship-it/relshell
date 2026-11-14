@@ -8,7 +8,7 @@ import { ROUTER_ZIP_URL, personalizeRouterZip, readRouterVersion } from '../rout
  * import it. The same button brings each new release: the copy keeps its IDs, so
  * importing it upgrades their flows.
  */
-export const RouterSetup = ({ email, open }: { email: string; open: boolean }) => {
+export const RouterSetup = ({ email, name, open }: { email: string; name?: string; open: boolean }) => {
   const [version, setVersion] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
@@ -56,7 +56,7 @@ export const RouterSetup = ({ email, open }: { email: string; open: boolean }) =
           {version && <span className="text-[10px] font-bold font-mono text-slate-400">v{version}</span>}
         </div>
         <p className="text-xs text-slate-400 mt-0.5">
-          Your own copy of the OXY Connection Flow, made for <span className="font-semibold text-slate-500">{email}</span>.
+          Your own copy of the OXY Connection Flow, made for <span className="font-semibold text-slate-500">{name || email}</span>.
           It runs on your connections and never touches anyone else's flows.
         </p>
       </div>
