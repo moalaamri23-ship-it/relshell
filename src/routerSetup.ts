@@ -10,6 +10,7 @@
  *   - flow IDs (Workflow), AI Builder model and configuration IDs
  *   - the solution's unique name
  *   - connection reference and environment variable schema names
+ *   - the AI Builder model's name (unique in the environment, like an ID)
  *
  * The new values are derived from the signed-in Teams email, so the same person
  * gets the same IDs for every version: importing a newer zip upgrades their own
@@ -120,6 +121,15 @@ export const personalizeRouterZip = async (base: ArrayBuffer, rawEmail: string):
     if (entry.dir) return
     entries.push(entry.async('string').then(text => {
       let body = rewrite(text)
+      if (path === 'customizations.xml') {
+        // An AI Builder model's name is unique in the environment (index
+        // ndx_Uniquename on msdyn_aimodel), not only its ID: the first import of a
+        // personal copy failed on it. The first msdyn_name after each <AIModel> is
+        // the model's own; its configurations carry the (already new) model ID.
+        body = body.replace(
+          /(<AIModel>[\s\S]*?<msdyn_name>)([^<]*)(<\/msdyn_name>)/g,
+          (_m, a: string, n: string, z: string) => `${a}${n} (${suffix})${z}`)
+      }
       if (path === 'solution.xml') {
         body = body
           .replace(
