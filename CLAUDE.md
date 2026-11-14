@@ -117,6 +117,27 @@ frame) `app.initialize()` gets no answer; after 5 s the shell keeps the typed em
 Teams marks these values a **hint, not proof**: use them to fill and greet, never to
 grant access.
 
+### Router Set-up (Teams only)
+
+Settings → **Router Set-up** (`src/components/RouterSetup.tsx`, `src/routerSetup.ts`) hands each
+engineer their own copy of the OXY Connection Flow solution. Shown only when Teams supplied the
+email (`emailFromTeams`), because that email names the copy.
+
+- Base package: `public/router/AIRouter.zip` (public on purpose). **Release** = copy the new
+  `~/Downloads/Projects/ai-router/dist/AIRouter_<ver>.zip` over it and push. The panel shows the
+  version from its `solution.xml`.
+- Everyone imports into the same shared default environment, where the base zip's fixed IDs would
+  hit the owner's flows. `personalizeRouterZip` (in the browser, JSZip lazy chunk) rewrites every
+  component the package owns: flow IDs, AI Builder model/configuration IDs, solution unique name
+  (`AIRouter_<local>_<hash4>`), connection reference and environment variable schema names
+  (`_<local>_<hash4>` suffix). IDs are SHA-256 of `relshell-router|<email>|<old id>`, so the same
+  email always yields the same IDs: a newer zip **upgrades** that person's copy. Anything pointing
+  outside the package (connector ids, AI Builder template id, SharePoint sites, Copilot agent,
+  publisher) is left alone.
+- Never change the derivation (prefix, hash, suffix format): every existing copy would stop
+  upgrading and import as a second set.
+- The owner keeps importing the base zip; a download from the panel makes them a second set.
+
 ## Install page (PWA)
 
 `/downloadapp` is `public/downloadapp.html`, a static page shared in Teams so

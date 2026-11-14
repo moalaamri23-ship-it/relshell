@@ -4,6 +4,7 @@ import { ACCENT_META, ACCENT_COLORS, FAVICON_PREFIX, isBuiltinApp } from '../con
 import { isValidEmail, isValidFlowUrl, type SharedSettings } from '../sharedSettings'
 import { Icon } from './Icon'
 import { storageRemove } from '../safeStorage'
+import { RouterSetup } from './RouterSetup'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -211,6 +212,11 @@ export const SettingsPanel = ({ open, apps, onAppsChange, shared, onSharedChange
                 </button>
               </div>
             </section>
+
+            {/* Teams only: the email that names the copy comes from the signed-in account. */}
+            {emailFromTeams && isValidEmail(shared.engineerEmail) && shared.engineerEmail.trim() && (
+              <RouterSetup email={shared.engineerEmail.trim()} open={open} />
+            )}
 
             <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 ml-1 pt-1">Applications</div>
             {apps.length === 0 && (
